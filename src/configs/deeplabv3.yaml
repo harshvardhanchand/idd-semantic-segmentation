@@ -1,0 +1,12 @@
+# DeepLabV3+ ResNet-50 configuration
+_base_: "base.yaml"
+
+model:
+  name: "deeplabv3"
+
+experiment:
+  name: "idd_lite_deeplabv3_r50"
+
+training:
+  epochs: 100
+  batch_size: 8  # Optimized for Colab T4 
