@@ -1,0 +1,45 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Dataset (40MB - too large for git)
+data/idd20k_lite/
+
+# Training outputs and model checkpoints (419MB!)
+runs/
+
+# Domain gap analysis outputs (will be large)
+domain_gap/preds/
+domain_gap/results/
+domain_gap/checkpoints/
+
+# IDE files
+.cursor/
+.vscode/
+.idea/
+
+# Model files and checkpoints
+*.pth
+*.pt
+*.ckpt
+
+# Logs and temporary files
+*.log
+*.tmp
+
+
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+venv/
+.venv/
+.venv-mmseg/
+
+
+# Paper PDF
+1811.10200v1.pdf 

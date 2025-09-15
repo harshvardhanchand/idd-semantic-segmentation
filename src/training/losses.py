@@ -1,26 +1,38 @@
 """Loss functions for semantic segmentation."""
 
+import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from sklearn.utils.class_weight import compute_class_weight
+import segmentation_models_pytorch as smp
 
 
 class SegmentationLoss(nn.Module):
-    """Combined segmentation loss with auxiliary loss support."""
+    """Enhanced segmentation loss with CrossEntropy + Lovász-Softmax."""
 
     def __init__(
         self,
         ignore_index: int = 255,
-        aux_weight: float = 0.4,
+        aux_weight: float = 0.0,
         class_weights: torch.Tensor = None,
+        lovasz_weight: float = 0.0,
     ):
         super().__init__()
         self.ignore_index = ignore_index
         self.aux_weight = aux_weight
+        self.lovasz_weight = lovasz_weight
 
         self.main_loss = nn.CrossEntropyLoss(
             ignore_index=ignore_index, weight=class_weights
         )
+
+        if lovasz_weight > 0:
+            self.lovasz_loss = smp.losses.LovaszLoss(
+                mode="multiclass",
+                ignore_index=ignore_index,
+                per_image=False,
+                from_logits=True,
+            )
 
         if aux_weight > 0:
             self.aux_loss = nn.CrossEntropyLoss(
@@ -28,36 +40,58 @@ class SegmentationLoss(nn.Module):
             )
 
     def forward(self, outputs, targets):
-        """Compute segmentation loss."""
         if isinstance(outputs, dict):
-            # Model returns dict with 'out' and 'aux'
             main_output = outputs["out"]
-            loss = self.main_loss(main_output, targets)
+
+            ce_loss = self.main_loss(main_output, targets)
+            total_loss = ce_loss
+
+            # Add Lovász-Softmax loss
+            if self.lovasz_weight > 0:
+                lovasz_loss = self.lovasz_loss(main_output, targets)
+                total_loss = total_loss + self.lovasz_weight * lovasz_loss
 
             if "aux" in outputs and self.aux_weight > 0:
                 aux_output = outputs["aux"]
-                aux_loss_val = self.aux_loss(aux_output, targets)
-                loss = loss + self.aux_weight * aux_loss_val
+                aux_ce_loss = self.aux_loss(aux_output, targets)
+                total_loss = total_loss + self.aux_weight * aux_ce_loss
 
-            return loss
+                if self.lovasz_weight > 0:
+                    aux_lovasz_loss = self.lovasz_loss(aux_output, targets)
+                    total_loss = (
+                        total_loss
+                        + self.aux_weight * self.lovasz_weight * aux_lovasz_loss
+                    )
+
+            return total_loss
         else:
-            # Model returns tensor directly
-            return self.main_loss(outputs, targets)
+
+            ce_loss = self.main_loss(outputs, targets)
+
+            if self.lovasz_weight > 0:
+                lovasz_loss = self.lovasz_loss(outputs, targets)
+                return ce_loss + self.lovasz_weight * lovasz_loss
+
+            return ce_loss
 
 
 def compute_class_weights(
     loader, num_classes: int, ignore_index: int = 255
 ) -> torch.Tensor:
-    """Compute class weights from dataset for balanced training."""
-    class_counts = torch.zeros(num_classes, dtype=torch.float)
+    """Compute balanced class weights using sklearn."""
+    print("Collecting labels for class weight computation...")
 
-    for _, targets in loader:
-        for cls in range(num_classes):
-            mask = targets == cls
-            class_counts[cls] += mask.sum().item()
+    all_labels = []
+    for batch_idx, (_, targets) in enumerate(loader):
+        if batch_idx % 50 == 0:
+            print(f"Processing batch {batch_idx + 1}/{len(loader)}")
 
-    # Inverse frequency weighting
-    total_pixels = class_counts.sum()
-    class_weights = total_pixels / (num_classes * class_counts + 1e-8)
+        valid_labels = targets[targets != ignore_index].flatten()
+        all_labels.extend(valid_labels.cpu().numpy())
 
-    return class_weights
+    all_labels = np.array(all_labels)
+    classes = np.arange(num_classes)
+
+    weights = compute_class_weight("balanced", classes=classes, y=all_labels)
+
+    return torch.FloatTensor(weights)

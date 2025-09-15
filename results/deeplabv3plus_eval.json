@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "raw_output": "---------------------------------------------\nLevel 1 Scores\n---------------------------------------------\ndrivable\t\t:0.9235955200770645\nnon-drivable\t\t:0.414587622051408\nliving-things\t\t:0.46353129854035474\nvehicles\t\t:0.7169005777199722\nroad-side-objs\t\t:0.46489777632583196\nfar-objects\t\t:0.7426882244357798\nsky\t\t:0.9384177398318898\n---------------------------------------------\nmIoU\t\t:0.5830773448727876\n---------------------------------------------\n[0.92368722 0.41468474 0.46383041 0.71701878 0.46503193 0.74286276\n 0.93860129]\nmIoU:\t\t\t\t66.65310164135244\n",
+  "parsed_metrics": {
+    "IoU_drivable": 92.35955200770644,
+    "IoU_non-drivable": 41.4587622051408,
+    "IoU_living-things": 46.35312985403547,
+    "IoU_vehicles": 71.69005777199722,
+    "IoU_road-side-objs": 46.4897776325832,
+    "IoU_far-objects": 74.26882244357797,
+    "IoU_sky": 93.84177398318899,
+    "mIoU": 66.65310164135244
+  },
+  "command": "python3 /Users/harsh/Desktop/idd-semantic-segmentation/third_party/autonue/evaluation/idd_lite_evaluate_mIoU.py --gts data/idd20k_lite/gtFine/val --preds results/preds/deeplabv3plus_val_pngs --num-workers 2"
+}

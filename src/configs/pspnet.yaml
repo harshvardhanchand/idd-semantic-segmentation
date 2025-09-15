@@ -1,0 +1,12 @@
+
+
+_base_: base.yaml
+
+model:
+  name: "pspnet"
+  encoder_name: "resnet50"    
+  encoder_weights: "imagenet" 
+         
+         
+experiment:
+  name: "idd_pspnet_resnet50_conservative" 

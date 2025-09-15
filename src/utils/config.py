@@ -11,20 +11,16 @@ class ConfigLoader:
 
     @staticmethod
     def load_config(config_path: str) -> Dict[str, Any]:
-        """Load config with base inheritance."""
         config_path = Path(config_path)
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        # Handle base config inheritance
         if "_base_" in config:
             base_path = config_path.parent / config["_base_"]
             base_config = ConfigLoader.load_config(base_path)
 
-            # Deep merge base with current config
             merged_config = ConfigLoader._deep_merge(base_config, config)
-            # Remove _base_ key
             merged_config.pop("_base_", None)
             return merged_config
 
@@ -32,7 +28,6 @@ class ConfigLoader:
 
     @staticmethod
     def _deep_merge(base: Dict, override: Dict) -> Dict:
-        """Deep merge two dictionaries."""
         result = copy.deepcopy(base)
 
         for key, value in override.items():

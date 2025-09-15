@@ -16,16 +16,13 @@ def set_seed(seed: int = 42):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-    # Ensure deterministic behavior
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    # Set environment variable for Python hash randomization
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 
 def get_git_commit() -> str:
-    """Get current git commit hash."""
     try:
         commit = (
             subprocess.check_output(["git", "rev-parse", "HEAD"])
@@ -38,7 +35,7 @@ def get_git_commit() -> str:
 
 
 def get_env_info() -> Dict[str, Any]:
-    """Get environment information for reproducibility."""
+    """Get environment information."""
     info = {
         "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
         "torch_version": torch.__version__,
@@ -55,7 +52,6 @@ def get_env_info() -> Dict[str, Any]:
 
 
 def print_env_info():
-    """Print environment information."""
     info = get_env_info()
     print("Environment Information:")
     for key, value in info.items():

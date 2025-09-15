@@ -1,43 +1,58 @@
-"""Learning rate schedulers for semantic segmentation."""
+"""Learning rate schedulers for semantic segmentation (step-per-iteration)."""
 
 import torch
-from torch.optim.lr_scheduler import _LRScheduler
+from typing import Dict
 
+def create_scheduler(optimizer, config: Dict, total_steps: int):
+    """
+    Create a step-per-batch scheduler with optional warmup.
+    - total_steps: number of optimizer steps in the whole run (len(train_loader) * epochs)
+    """
+    if total_steps <= 0:
+        raise ValueError("total_steps must be > 0")
 
-class PolynomialLR(_LRScheduler):
-    """Polynomial learning rate decay scheduler."""
+    tr = config["training"]
+    name = tr["scheduler"]
 
-    def __init__(
-        self, optimizer, max_iter: int, power: float = 0.9, last_epoch: int = -1
-    ):
-        self.max_iter = max_iter
-        self.power = power
-        super().__init__(optimizer, last_epoch)
+   
+    warmup_default = int(0.02 * total_steps)  
+    warmup_steps = tr.get("warmup_steps", warmup_default)
+    warmup_steps = max(0, min(warmup_steps, max(total_steps - 1, 1)))  
+    warmup_start = tr.get("warmup_start_factor", 0.01)  
 
-    def get_lr(self):
-        """Compute current learning rate."""
-        if self.last_epoch >= self.max_iter:
-            return [0 for _ in self.base_lrs]
+    main_total = max(1, total_steps - warmup_steps) 
+    min_lr = tr.get("min_lr", 0.0) 
 
-        factor = (1 - self.last_epoch / self.max_iter) ** self.power
-        return [base_lr * factor for base_lr in self.base_lrs]
+   
+    if name == "poly":
+        power = tr.get("poly_power", 0.9)
+        main = torch.optim.lr_scheduler.PolynomialLR(
+            optimizer, total_iters=main_total, power=power
+        )  
 
+    elif name == "cosine":
+       
+        main = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=main_total, eta_min=min_lr
+        )
 
-def create_scheduler(optimizer, config: dict, total_steps: int):
-    """Create scheduler based on config."""
-    scheduler_name = config["training"]["scheduler"].lower()
-
-    if scheduler_name == "poly":
-        power = config["training"].get("poly_power", 0.9)
-        return PolynomialLR(optimizer, total_steps, power)
-
-    elif scheduler_name == "cosine":
-        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, total_steps)
-
-    elif scheduler_name == "step":
-        step_size = config["training"].get("step_size", total_steps // 3)
-        gamma = config["training"].get("step_gamma", 0.1)
-        return torch.optim.lr_scheduler.StepLR(optimizer, step_size, gamma)
+    elif name == "step":
+        step_size = tr.get("step_size", max(1, total_steps // 3))
+        gamma = tr.get("step_gamma", 0.1)
+        main = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
     else:
-        raise ValueError(f"Unknown scheduler: {scheduler_name}")
+        raise ValueError(f"Unknown scheduler: {name}")
+
+    
+    if warmup_steps > 0:
+        warmup = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=warmup_start, end_factor=1.0, total_iters=warmup_steps
+        )
+        sched = torch.optim.lr_scheduler.SequentialLR(
+            optimizer, schedulers=[warmup, main], milestones=[warmup_steps]
+        )
+    else:
+        sched = main
+
+    return sched

@@ -1,0 +1,6 @@
+[submodule "third_party/autonue"]
+	path = third_party/autonue
+	url = https://github.com/AutoNUE/public-code
+[submodule "vainf-deeplabv3"]
+	path = vainf-deeplabv3
+	url = https://github.com/VainF/DeepLabV3Plus-Pytorch.git

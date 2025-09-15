@@ -1,0 +1,13 @@
+_base_: "base.yaml"
+
+# Test config for CPU validation
+model:
+  name: "deeplabv3"
+
+training:
+  epochs: 1  # Just 1 epoch for testing
+  batch_size: 2  # Smaller batch for CPU
+  val_every: 1
+
+experiment:
+  name: "test_cpu_run" 

@@ -82,15 +82,28 @@ class BaseSegmentationModel(ABC, nn.Module):
         """Get the backbone/encoder module for freezing/unfreezing"""
         pass
 
-    def print_model_info(self):
-        """Print model information"""
+    def print_model_info(self, config=None):
+        """Print model information with dynamic config data"""
         total_params, trainable_params = self.count_parameters()
         print(f"\n{self.get_model_name()} Model Info:")
         print(f"  Total parameters: {total_params:,}")
         print(f"  Trainable parameters: {trainable_params:,}")
         print(f"  Number of classes: {self.num_classes}")
 
-        # Check if backbone is frozen
+        if config is not None:
+            data_config = (
+                config.get("data", {})
+                if isinstance(config, dict)
+                else getattr(config, "data", {})
+            )
+            if isinstance(data_config, dict) and "image_size" in data_config:
+                image_size = data_config["image_size"]
+                print(f"  Input size: {image_size[0]}x{image_size[1]}")
+
+            if isinstance(data_config, dict) and "batch_size" in data_config:
+                batch_size = data_config["batch_size"]
+                print(f"  Batch size: {batch_size}")
+
         backbone = self.get_backbone()
         if backbone is not None:
             backbone_trainable = sum(

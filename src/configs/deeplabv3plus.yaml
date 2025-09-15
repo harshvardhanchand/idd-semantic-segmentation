@@ -1,0 +1,18 @@
+
+
+
+_base_: base.yaml
+
+model:
+  name: "deeplabv3plus"     
+  backbone: "mobilenet"     
+  output_stride: 8          
+  pretrained_backbone: true 
+  cityscapes_path: "pretrained_weights/deeplabv3plus_mobilenet_cityscapes.pth"
+
+
+training:
+  aux_loss_weight: 0.3
+
+experiment:
+  name: "idd_deeplabv3plus_mobilenet_optimized" 

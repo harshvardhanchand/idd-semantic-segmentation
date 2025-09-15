@@ -1,29 +1,25 @@
-"""
-Models package for IDD semantic segmentation.
-Provides clean API for model creation and management.
-"""
+"""Models package for semantic segmentation."""
 
 from .base_model import BaseSegmentationModel
-from .deeplabv3 import DeepLabV3Plus
-from .fcn import FCN
+from .deeplabv3plus import DeepLabV3Plus
+from .deeplabv3 import DeepLabV3ResNet50
+from .pspnet import PSPNet
 from .model_factory import ModelFactory, create_model
 
-# Define what gets imported with "from src.models import *"
 __all__ = [
     "BaseSegmentationModel",
     "DeepLabV3Plus",
-    "FCN",
+    "DeepLabV3ResNet50",
+    "PSPNet",
     "ModelFactory",
     "create_model",
 ]
 
-# Version info
-__version__ = "1.0.0"
-
 # Model registry for easy access
-AVAILABLE_MODELS = {
-    "deeplabv3": DeepLabV3Plus,
-    "fcn": FCN,
+MODELS = {
+    "deeplabv3plus": DeepLabV3Plus,
+    "deeplabv3_resnet50": DeepLabV3ResNet50,
+    "pspnet": PSPNet,
 }
 
 

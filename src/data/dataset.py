@@ -1,12 +1,11 @@
-"""IDD dataset loader with proper transforms."""
+"""IDD dataset loader with transforms."""
 
-import os
 from pathlib import Path
 from typing import Tuple, Optional, Callable, List
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
-import numpy as np
+from .transforms import get_transforms
 
 
 class IDDDataset(Dataset):
@@ -26,7 +25,6 @@ class IDDDataset(Dataset):
         self.target_transform = target_transform
         self.joint_transform = joint_transform
 
-        # Build file lists
         self.images, self.targets = self._make_dataset()
 
         if len(self.images) == 0:
@@ -45,7 +43,6 @@ class IDDDataset(Dataset):
         if not target_dir.exists():
             raise RuntimeError(f"Target directory not found: {target_dir}")
 
-        # Iterate through subdirectories
         for subdir in sorted(img_dir.iterdir()):
             if not subdir.is_dir():
                 continue
@@ -54,9 +51,7 @@ class IDDDataset(Dataset):
             if not target_subdir.exists():
                 continue
 
-            # Find image files
             for img_path in sorted(subdir.glob("*_image.jpg")):
-                # Extract base name to find corresponding label
                 base_name = img_path.stem.replace("_image", "")
                 label_path = target_subdir / f"{base_name}_label.png"
 
@@ -67,19 +62,15 @@ class IDDDataset(Dataset):
         return images, targets
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Get image and target pair."""
         img_path = self.images[index]
         target_path = self.targets[index]
 
-        # Load image and target
         image = Image.open(img_path).convert("RGB")
-        target = Image.open(target_path)  # Keep as grayscale
+        target = Image.open(target_path)
 
-        # Apply joint transforms (geometric transforms applied to both)
         if self.joint_transform is not None:
             image, target = self.joint_transform(image, target)
 
-        # Apply individual transforms
         if self.transform is not None:
             image = self.transform(image)
 
@@ -94,12 +85,10 @@ class IDDDataset(Dataset):
 
 def create_datasets(config: dict) -> Tuple[IDDDataset, IDDDataset]:
     """Create train and validation datasets."""
-    from .transforms import get_transforms
 
     data_config = config["data"]
     aug_config = config["augmentation"]
 
-    # Get transforms
     train_transforms = get_transforms(
         image_size=data_config["image_size"], is_training=True, **aug_config
     )
@@ -108,7 +97,6 @@ def create_datasets(config: dict) -> Tuple[IDDDataset, IDDDataset]:
         image_size=data_config["image_size"], is_training=False, **aug_config
     )
 
-    # Create datasets
     train_dataset = IDDDataset(
         root=data_config["root"], split="train", **train_transforms
     )
